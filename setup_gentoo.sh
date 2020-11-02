@@ -18,7 +18,6 @@ sed '/^$/d' network_devices
 sed -e '\#Disk /dev/ram#,+5d' -i devices
 sed -e '\#Disk /dev/loop#,+5d' -i devices
 
-done
 #copying files into place
 cd /mnt/gentoo/deploygentoo-master
 
