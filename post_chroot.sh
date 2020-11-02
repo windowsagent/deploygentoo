@@ -15,7 +15,7 @@ printf ${LIGHTBLUE}"Do you want to install Xfce? (Cause appearently, you, are pr
 read xfce
 
 install_vars_count="$(wc -w /install_vars)"
-disk=$(/dev/sda)
+disk=$(sed '1q;d' install_vars)
 username=$(sed '2q;d' install_vars)
 kernelanswer=$(sed '3q;d' install_vars)
 hostname=$(sed '4q;d' install_vars)
