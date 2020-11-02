@@ -34,7 +34,8 @@ jobs=("-j${cpus}")
 printf "jobs equals %s" % $jobs
 printf "mounted boot\n"
 #TODO everything below this point fails on musl, figure out why, error is Your current profile is invalid
-emerge --sync --quiet
+emerge --sync
+eprofile set 5
 #TODO This emerge fails for some reason
 emerge -q app-portage/mirrorselect
 emerge -q gentoolkit
