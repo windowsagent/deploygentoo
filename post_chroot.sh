@@ -11,6 +11,9 @@ sed -i '/^$/d' install_vars
 #rm -rf /mnt/gentoo/temp_f
 install_vars=install_vars
 
+printf ${LIGHTBLUE}"Do you want to install Xfce? (Cause appearently, you, are pretty lazy to do it yourself :/) \n"
+read xfce
+
 install_vars_count="$(wc -w /install_vars)"
 disk=$(sed '1q;d' install_vars)
 username=$(sed '2q;d' install_vars)
@@ -67,49 +70,21 @@ esac
 
 printf "preparing to do big emerge\n"
 
-printf "America/New_York\n" > /etc/timezone
+printf "America/Mexico_City\n" > /etc/timezone
 emerge --config --quiet sys-libs/timezone-data
 printf "timezone data emerged\n"
 #en_US.UTF-8 UTF-8
 printf "en_US.UTF-8 UTF-8\n" >> /etc/locale.gen
+printf "es_MX.utf8 UTF-8\n" >> /etc/locale.gen
 locale-gen
 printf "script complete\n"
 eselect locale set 4
 env-update && source /etc/profile
 
 #Installs the kernel
-printf "preparing to emerge kernel sources\n"
-emerge -q sys-kernel/gentoo-sources
+printf "Downloading prebuilt distribution kernel, because that's much faster!\n"
+emerge -q sys-kernel/gentoo-kernel-bin
 sleep 10
-ls -l /usr/src/linux
-cd /usr/src/linux
-emerge -q sys-apps/pciutils
-emerge -q app-arch/lzop
-emerge -q app-arch/lz4
-if [ $kernelanswer = "no" ]; then
-	rm -rf /usr/src/linux/.config
-	make mrproper
-	cp /deploygentoo-master/gentoo/kernel/gentoohardenedminimal /usr/src/linux/.config
-	make olddefconfig
-	make $jobs && make modules_install
-	make install
-	printf "Kernel installed\n"
-elif [ $kernelanswer = "edit" ]; then
-    make mrproper
-	cp /deploygentoo-master/gentoo/kernel/gentoohardenedminimal /usr/src/linux/.config
-	make menuconfig
-	make $jobs && make modules_install
-	make install
-	printf "Kernel installed\n"
-else
-	printf "time to configure your own kernel\n"
-	make menuconfig
-	make $jobs && make modules_installl
-	make install
-	printf "Kernel installed\n"
-fi
-
-cd /etc/init.d
 #enables DHCP
 sed -i -e "s/localhost/$hostname/g" /etc/conf.d/hostname
 emerge --noreplace --quiet net-misc/netifrc
@@ -306,14 +281,14 @@ if [ $sslanswer = "yes" ]; then
     layman -a libressl
     layman -S
 else
-    printf "not useing LibreSSL\n"
+    printf "Not using LibreSSL\n"
 fi
 
 
 while true; do
-    printf ${LIGHTGREEN}"enter the password for your root user\n>"
+    printf ${LIGHTGREEN}"Enter the password for your root user:\n>"
     read -s password
-    printf ${LIGHTGREEN}"re-enter the password for your root user\n>"
+    printf ${LIGHTGREEN}"Re-enter the password for your root user:\n>"
     read -s password_compare
     if [ "$password" = "$password_compare" ]; then
 	echo "root:$password" | chpasswd
@@ -326,20 +301,39 @@ while true; do
     fi
 done
 while true; do
-    printf ${LIGHTGREEN}"enter the password for your user %s\n>" $username
+    printf ${LIGHTGREEN}"Enter the password for your user %s:\n>" $username
     read -s password
-    printf ${LIGHTGREEN}"re-enter the password for %s\n>" "$username"
+    printf ${LIGHTGREEN}"Re-enter the password for %s:\n>" "$username"
     read -s password_compare
     if [ "$password" = "$password_compare" ]; then
 	echo "$username:$password" | chpasswd
         break
     else
-        printf ${LIGHTRED}"passwords do not match, re enter them\n"
+        printf ${LIGHTRED}"Passwords do not match, re enter them, please ;D.\n"
         printf ${WHITE}".\n"
         sleep 3
         clear
     fi
 done
+
+if [ $xfce = "yes" ]; then
+    emerge -q x11-base/xorg-server
+    env-update
+    source /etc/profile
+    emerge -q xfce-base/xfce4-meta
+    for x in cdrom cdrw usb ; do gpasswd -a $username $x ; done
+    env-update && source /etc/profile
+    emerge -q xfce-extra/xfce4-pulseaudio-plugin xfce-extra/xfce4-taskmanager x11-themes/xfwm4-themes app-office/orage app-editors/mousepad xfce-extra/xfce4-power-manager x11-terms/xfce4-terminal xfce-base/thunar
+    echo "exec startxfce4" > ~/.xinitrc
+    rc-update add dbus default
+    rc-update add xdm default
+    emerge -q x11-misc/slim
+    echo XSESSION=\"Xfce4\" > /etc/env.d/90xsession
+    env-update && source /etc/profile
+else
+    printf "You're going for a bare TTY, my friend.\n"
+fi
+
 printf "cleaning up\n"
 rm -rf /gentootype.txt
 rm -rf /install_vars
@@ -347,6 +341,6 @@ cp -r /deploygentoo-master/gentoo/portage/savedconfig /etc/portage/
 cp -r /deploygentoo-master/gentoo/portage/env /etc/portage/
 cp /deploygentoo-master/gentoo/portage/package.env /etc/portage/
 rm -rf /deploygentoo-master
-printf ${LIGHTGREEN}"You now have a completed gentoo installation system, reboot and remove the installation media to load it\n"
+printf ${LIGHTGREEN}"You now have a completed gentoo installation system (presumably with a bloated DE, because you don't wanna learn to use a Window Manager. Reboot and remove the installation media to load it\n"
 printf ${LIGHTGREEN}"reboot\n"
 rm -rf /post_chroot.sh
